@@ -5,12 +5,16 @@
 (def t1 {:topic/title "First topic"
          :db/id 100})
 
+(def extension-fn (constantly "extension-fn"))
+
 (def posts
   [{:post/content "T1 First post content"
     :post/topic t1
+    :post/extension "extension 1"
     :db/id 101}
    {:post/content "T1 Second post content"
     :post/topic t1
+    :post/extension "extension 2"
     :db/id 102}])
 
 (c/defmaprules ent->post
@@ -28,6 +32,13 @@
   (c/has-many :posts
               :rules flyingmachine.cartographer.t-core/ent->post
               :retriever (fn [_] posts)))
+
+(def extended-post
+  (c/extend-maprules
+   ent->post
+   :add
+   (c/attr :extension :post/extension)
+   (c/attr :extension-fn extension-fn)))
 
 (fact "mapify does not include relationships by default"
   (let [serialization (c/mapify t1 ent->topic)]
@@ -63,3 +74,8 @@
         p-topic (select-keys topic [:id :title])]
     (count t-posts) => 2
     t-posts => (contains {:topic p-topic})))
+
+(fact "you can extend maprules"
+  (let [post (c/mapify (first posts) extended-post)]
+    (:extension post) => "extension 1"
+    (extension-fn post) => "extension-fn"))

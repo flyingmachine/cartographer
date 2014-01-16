@@ -28,17 +28,36 @@ Retriever is the function that will be applied to the entity"
 ;;   [ref-attr]
 ;;   #(ffirst (db/q [:find '(count ?c) :where ['?c ref-attr (:db/id %)]])))
 
+(defn rules
+  [fields]
+  (let [seed {:attributes {} :relationships {}}]
+    (reduce (fn [result [f & args]]
+              (let [tomerge (apply (resolve f) args)
+                    destination (if (:rules (first (vals tomerge))) :relationships :attributes)]
+                (update-in result [destination] merge tomerge)))
+            seed
+            fields)))
+
 (defmacro defmaprules
   [name & fields]
-  `(def ~name
-     (let [seed# {:attributes {} :relationships {}}]
-       (reduce (fn [result# [fun# & args#]]
-                 (let [tomerge# (apply (resolve fun#) args#)
-                       destination# (if (:rules (first (vals tomerge#))) :relationships :attributes)]
-                   (update-in result# [destination#] merge tomerge#)))
-               seed#
-               (quote [~@fields])))))
+  `(def ~name (rules (quote [~@fields]))))
 
+(defn map-on-keywords
+  [seq]
+  (->> seq
+       (partition-by keyword?)
+       (partition 2)
+       (map (fn [[a b]] [(first a) b]))
+       (into {})))
+
+(defmacro extend-maprules
+  [existing & opts]
+  (let [{:keys [add remove]} (map-on-keywords opts)]
+    `(let [existing# ~existing]
+       (merge-with
+        merge
+        (apply dissoc existing# ~remove)
+        (rules (quote [~@add]))))))
 
 ;;;;
 ;; Below are functions for actually serializing an entity
