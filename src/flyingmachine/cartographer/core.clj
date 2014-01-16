@@ -42,21 +42,22 @@ Retriever is the function that will be applied to the entity"
   [name & fields]
   `(def ~name (rules (quote [~@fields]))))
 
-(defn map-on-keywords
-  [seq]
-  (->> seq
-       (partition-by keyword?)
-       (partition 2)
-       (map (fn [[a b]] [(first a) b]))
-       (into {})))
+(defn map-on-keys
+  [keys seq]
+  (let [ks (into #{} keys)]
+    (->> seq
+         (partition-by #(get ks %))
+         (partition 2)
+         (map (fn [[a b]] [(first a) b]))
+         (into {}))))
 
 (defmacro extend-maprules
   [existing & opts]
-  (let [{:keys [add remove]} (map-on-keywords opts)]
+  (let [{:keys [add remove]} (map-on-keys [:add :remove] opts)]
     `(let [existing# ~existing]
        (merge-with
         merge
-        (apply dissoc existing# ~remove)
+        (apply dissoc existing# (quote ~remove))
         (rules (quote [~@add]))))))
 
 ;;;;
