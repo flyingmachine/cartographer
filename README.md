@@ -5,7 +5,7 @@ source entities into maps. My primary use case for it is converting
 Datomic entities, though I'm sure you will find many more thrilling
 uses for it.
 
-Add the following to your dependencies: `[flyingmachine/cartographer "0.1.1"]`
+Add the following to your dependencies: `[flyingmachine/cartographer "0.1.3"]`
 
 ## Example
 
